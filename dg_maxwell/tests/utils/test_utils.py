@@ -133,18 +133,20 @@ def test_polynomial_product_coeffs():
             af.np_to_af_array(np.array([[-2, 4, 7., 9], [1, 0, -9.1124, 7]]))), 0, 2, 1)
 
     numerical_product_coeffs    = utils.polynomial_product_coeffs(poly1, poly2)
-    analytical_product_coeffs_1 = af.np_to_af_array(np.array([[-2, -4, 6, -8],\
+    analytical_product_coeffs_1 = af.np_to_af_array(np.array([[-2, -4, -6, -8],\
                                                             [4, 8, 12, 16],\
                                                             [7, 14, 21, 28],\
                                                             [9, 18, 27, 36]]))
 
-    analytical_product_coeffs_2 = af.np_to_af_array(np.array([[5, 2, -4.7211, 2],\
+    analytical_product_coeffs_2 = af.np_to_af_array(np.array([[5, -2, -4.7211, 2],\
                                                             [0, 0, 0, 0],\
                                                             [-45.562, 18.2248, 43.02055164, -18.2248],\
-                                                            [35, 14, -33.0477, 14]]))
+                                                            [35, -14, -33.0477, 14]]))
 
-    assert af.max(numerical_product_coeffs[:, :, 0] - analytical_product_coeffs_1 + \
-                  numerical_product_coeffs[:, :, 1] - analytical_product_coeffs_2) < threshold
+    print(numerical_product_coeffs[:, :, 0] - analytical_product_coeffs_1)
+    print(numerical_product_coeffs[:, :, 1] - analytical_product_coeffs_2)
+    assert af.max(af.abs(numerical_product_coeffs[:, :, 0] - analytical_product_coeffs_1 + \
+                  numerical_product_coeffs[:, :, 1] - analytical_product_coeffs_2)) < threshold
 
 
 

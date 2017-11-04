@@ -15,4 +15,4 @@ poly1_coeffs = af.reorder(af.transpose(af.np_to_af_array(np.array([[1, 2, 3.], [
 poly2_coeffs = af.reorder(af.transpose(af.np_to_af_array(np.array([[-2, 4, 7.], [-2, 4, 7.]]))), 0, 2, 1)
 print(poly1_coeffs, poly2_coeffs)
 print(utils.polynomial_product_coeffs(poly1_coeffs, poly2_coeffs))
-print(wave_equation_2d.Li_Lj_coeffs()[:, :, 1])
+af.display(wave_equation_2d.Li_Lj_coeffs()[:, :, 28][2, 2], 14)
