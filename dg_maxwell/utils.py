@@ -478,9 +478,11 @@ def integrate_2d(poly_xi, poly_eta, order, scheme = 'gauss'):
 def polynomial_derivative(polynomial):
     '''
     '''
-    derivtive_multiplier = af.tile(af.transpose(af.flip( af.range(polynomial.shape[1]))), d0 = polynomial.shape[0])
-    return (polynomial * derivtive_multiplier)[:, : -1] 
-
+    derivtive_multiplier = af.tile(af.transpose(af.flip(
+        af.range(polynomial.shape[1]))),
+                                   d0 = polynomial.shape[0])
+    
+    return (polynomial * derivtive_multiplier)[:, : -1]
 
 def polynomial_product_coeffs(poly1_coeffs, poly2_coeffs):
     '''
@@ -491,3 +493,34 @@ def polynomial_product_coeffs(poly1_coeffs, poly2_coeffs):
     product_coeffs = poly1_coeffs_tile * poly2_coeffs_tile
 
     return product_coeffs
+
+
+
+def polyval_2d(poly_2d, xi, eta):
+    '''
+    '''
+    
+    poly_xy = af.tile(poly_2d, d0 = 1, d1 = 1, d2 = xi.shape[0])
+    
+    xi_power = af.flip(af.range(poly_xy.shape[1], dtype = af.Dtype.u32))
+    xi_power = af.tile(af.transpose(xi_power), d0 = poly_xy.shape[0])
+    xi_power = af.tile(xi_power, d0 = 1, d1 = 1, d2 = xi.shape[0])
+    
+    eta_power = af.flip(af.range(poly_xy.shape[0], dtype = af.Dtype.u32))
+    eta_power = af.tile(eta_power, d0 = 1, d1 = poly_xy.shape[1])
+    eta_power = af.tile(eta_power, d0 = 1, d1 = 1, d2 = eta.shape[0])
+    
+    Xi = af.reorder(xi, d0 = 2, d1 = 1, d2 = 0)
+    Xi = af.tile(Xi, d0 = poly_xy.shape[0], d1 = poly_xy.shape[1])
+    Xi = Xi**xi_power
+
+    Eta = af.reorder(eta, d0 = 2, d1 = 1, d2 = 0)
+    Eta = af.tile(Eta, d0 = poly_xy.shape[0], d1 = poly_xy.shape[1])
+    Eta = Eta**eta_power
+    
+    Xi_Eta = Xi * Eta
+    poly_val = poly_xy * Xi_Eta
+    poly_val = af.sum(af.sum(poly_val, dim = 0), dim = 1)
+    poly_val = af.reorder(poly_val, d0 = 2, d1 = 1, d2 = 0)
+
+    return poly_val
