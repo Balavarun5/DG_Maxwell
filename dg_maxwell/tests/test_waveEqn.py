@@ -546,3 +546,18 @@ def test_Li_Lj_coeffs():
 
     af.display(numerical_L3_xi_L4_eta_coeffs - analytical_L3_xi_L4_eta_coeffs, 14)
     assert (af.max(af.abs(numerical_L3_xi_L4_eta_coeffs - analytical_L3_xi_L4_eta_coeffs)) <= threshold)
+
+
+def test_interpolation():
+    '''
+    '''
+    threshold = 8e-8
+
+    xi_i  = af.flat(af.transpose(af.tile(params.xi_LGL, 1, params.N_LGL)))
+    eta_j = af.tile(params.xi_LGL, params.N_LGL)
+    f_ij  = np.e ** (xi_i + eta_j)
+    interpolated_f = wave_equation_2d.lag_interpolation_2d(f_ij)
+    xi  = utils.linspace(-1, 1, 8)
+    eta = utils.linspace(-1, 1, 8)
+    assert (af.mean(utils.polyval_2d(interpolated_f, xi, eta) - np.e**(xi+eta)) < threshold)
+ 

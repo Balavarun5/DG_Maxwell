@@ -414,6 +414,17 @@ def Li_Lj_coeffs():
 
     return Li_Lj_coeffs
 
+def lag_interpolation_2d(f_ij):
+    '''
+    '''
+    Li_xi_Lj_eta_coeffs = Li_Lj_coeffs()
+    f_ij = af.reorder(f_ij, 2, 1, 0)
+    
+    f_ij_Li_Lj_coeffs = af.broadcast(utils.multiply, f_ij, Li_xi_Lj_eta_coeffs)
+    interpolated_f    = af.sum(f_ij_Li_Lj_coeffs, 2)
+
+    return interpolated_f
+
 def integrate_2d(product_coeff_tile, N_quad, scheme='Gaussian'):
     '''
     '''
