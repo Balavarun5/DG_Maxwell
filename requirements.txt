@@ -1,0 +1,12 @@
+pytest
+pytest-cov
+coveralls
+python-coveralls
+arrayfire
+numpy
+matplotlib
+tqdm
+scipy
+gmshtranslator
+h5py
+
