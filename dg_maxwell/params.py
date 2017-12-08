@@ -22,7 +22,7 @@ from dg_maxwell import wave_equation_2d
 x_nodes    = af.np_to_af_array(np.array([-1., 1.]))
 
 # The number of LGL points into which an element is split.
-N_LGL      = 6
+N_LGL      = 5
 
 # Number of elements the domain is to be divided into.
 N_Elements = 9
@@ -35,7 +35,7 @@ scheme     = 'gauss_quadrature'
 volume_integral_scheme = 'lobatto_quadrature'
 
 # The number quadrature points to be used for integration.
-N_quad     = 6
+N_quad     = N_LGL
 
 # Wave speed.
 c          = 1
@@ -50,7 +50,6 @@ c_lax      = c
 # This parameter can take values 'sin' or 'gaussian'.
 wave = 'sin'
 
-c_x = 1.
 
 
 # The parameters below are for 2D advection
@@ -61,14 +60,14 @@ c_x = 1.
 #######################2D Wave Equation#################################
 ########################################################################
 
-c_x = 1.
-c_y = 1.
+c_x = 0.6
+c_y = 0.0
 
 courant = 0.1
 
 mesh_file = 'examples/read_and_plot_mesh/mesh/square_10_10.msh'
 
 
-total_time_2d = 2.0
+total_time_2d = 10.0
 
 volume_integrand_scheme_2d = 'Lobatto'

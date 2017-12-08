@@ -178,10 +178,10 @@ class advection_variables:
         self.delta_y = self.delta_x
 
         self.delta_t_2d = courant * self.delta_x * self.delta_y \
-                        / (self.delta_x * c_x + self.delta_y * c_y)
+                        / (self.delta_y * abs(c_x) + self.delta_x * abs(c_y))
 
-        self.c_lax_2d_x = c_x
-        self.c_lax_2d_y = c_y
+        self.c_lax_2d = self.delta_x * self.delta_y \
+                        / (self.delta_y * c_x + self.delta_x * c_y)
 
         self.nodes, self.elements = msh_parser.read_order_2_msh(mesh_file)
 
@@ -196,18 +196,20 @@ class advection_variables:
             self.y_e_ij[:, element_tag] = isoparam.isoparam_y_2D(
                 self.nodes[element, 1], self.xi_i, self.eta_j)
 
-        self.u_e_ij = af.sin(self.x_e_ij * 2 * np.pi + self.y_e_ij * 4 * np.pi)
+        #self.u_e_ij = af.sin(self.x_e_ij * 2 * np.pi + self.y_e_ij * 4 * np.pi)
+        self.u_e_ij = np.e ** (- (self.x_e_ij ** 2 + self.y_e_ij ** 2)/(0.4 **2))
 
         # Array of timesteps seperated by delta_t.
         self.time_2d = utils.linspace(0, int(total_time_2d / self.delta_t_2d)
                                       * self.delta_t_2d,
                                       int(total_time_2d / self.delta_t_2d))
-        self.sqrt_det_g = wave_equation_2d.sqrt_det_g(self.nodes[self.elements[0]][:, 0], \
-                        self.nodes[self.elements[0]][:, 1], np.array(self.xi_i), np.array(self.eta_j))
+        #self.sqrt_det_g = wave_equation_2d.sqrt_det_g(self.nodes[self.elements[0]][:, 0], \
+        #                self.nodes[self.elements[0]][:, 1], np.array(self.xi_i), np.array(self.eta_j))
 
         self.elements_nodes = (af.reorder(af.transpose(af.np_to_af_array(self.nodes[self.elements[:]])), 0, 2, 1))
 
         self.sqrt_g = af.reorder(wave_equation_2d.trial_sqrt_det_g(self.elements_nodes[:, 0, :],\
-                      self.elements_nodes[:, 1, :], self.xi_i, self.eta_j), 0, 2, 1)
+                      self.elements_nodes[:, 1, :], self.xi_i, self.eta_j), 0,
+                      2, 1)
 
         return

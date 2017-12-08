@@ -552,7 +552,7 @@ def multivariable_poly_value(poly_2d, x, y):
 
     return polynomial_value
 
-def gauss_quad_multivar_poly(poly_xi_eta, N_quad, advec_var):
+def gauss_quad_multivar_poly(poly_xi_eta, N_quad, advec_var, sqrt_g):
     '''
     '''
     shape_poly_2d = poly_xi_eta.shape
@@ -572,8 +572,14 @@ def gauss_quad_multivar_poly(poly_xi_eta, N_quad, advec_var):
     P_xi_eta_quad_val = af.transpose(multivariable_poly_value(poly_xi_eta,
                                                               Xi, Eta))
     #P_xi_eta_quad_val = af.transpose(polyval_2d(poly_xi_eta, Xi, Eta))
-
     integral = af.sum(W_i * W_j * P_xi_eta_quad_val, dim = 0)
+    if (sqrt_g == 1):
+        wi_wj_sqrt_g = af.broadcast(multiply, W_i * W_j, advec_var.sqrt_g)
+        integral_val = af.broadcast(multiply, P_xi_eta_quad_val,
+                                    wi_wj_sqrt_g)
+        integral = af.sum(integral_val, 0)
+
+
 
     return af.transpose(integral)
 
@@ -606,7 +612,8 @@ def lobatto_quad_multivar_poly(poly_xi_eta, N_quad, advec_var):
     return af.transpose(integral)
 
 
-def integrate_2d_multivar_poly(poly_xi_eta, N_quad, scheme, advec_var):
+def integrate_2d_multivar_poly(poly_xi_eta, N_quad, scheme, advec_var\
+        , sqrt_g = 0):
     '''
     Evaluates the integral
 
@@ -641,7 +648,7 @@ def integrate_2d_multivar_poly(poly_xi_eta, N_quad, scheme, advec_var):
 
     '''
     if scheme is 'gauss':
-        return gauss_quad_multivar_poly(poly_xi_eta, N_quad, advec_var)
+        return gauss_quad_multivar_poly(poly_xi_eta, N_quad, advec_var, sqrt_g)
 
     elif scheme is 'lobatto':
         return lobatto_quad_multivar_poly(poly_xi_eta, N_quad, gv)

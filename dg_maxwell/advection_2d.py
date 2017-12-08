@@ -40,10 +40,14 @@ def volume_integral(u, advec_var):
     if (params.volume_integrand_scheme_2d == 'Lobatto' and params.N_LGL == params.N_quad):
         w_i = af.flat(af.transpose(af.tile(advec_var.lobatto_weights_quadrature, 1, params.N_LGL)))
         w_j = af.tile(advec_var.lobatto_weights_quadrature, params.N_LGL)
+
         wi_wj_dLp_xi = af.broadcast(utils.multiply, w_i * w_j, advec_var.dLp_Lq)
+
         volume_integrand_ij_1_sp = c_x * dxi_dx * af.broadcast(utils.multiply,\
                                                wi_wj_dLp_xi, u) / jacobian
+
         wi_wj_dLq_eta = af.broadcast(utils.multiply, w_i * w_j, advec_var.dLq_Lp)
+
         volume_integrand_ij_2_sp = c_y * deta_dy * af.broadcast(utils.multiply,\
                                                wi_wj_dLq_eta, u) / jacobian
 
@@ -70,48 +74,98 @@ def volume_integral(u, advec_var):
 
     return volume_integral
 
-def lax_friedrichs_flux(u):
+
+def upwind_flux(u, gv):
     '''
     '''
     u = af.reorder(af.moddims(u, params.N_LGL ** 2, 10, 10), 2, 1, 0)
 
-    diff_u_boundary = af.np_to_af_array(np.zeros([10, 10, params.N_LGL ** 2]))
+    if (params.c_x > 0):
+        u_xi_minus1_boundary_left = af.shift(u[:, :, -params.N_LGL:], d0=0, d1 = 1)
+        u[:, :, :params.N_LGL]    = u_xi_minus1_boundary_left
 
-    u_xi_minus1_boundary_right   = u[:, :, :params.N_LGL]
-    u_xi_minus1_boundary_left    = af.shift(u[:, :, -params.N_LGL:], d0=0, d1 = 1)
-    u[:, :, :params.N_LGL]       = (u_xi_minus1_boundary_right + u_xi_minus1_boundary_left) / 2
-
-    diff_u_boundary[:, :, :params.N_LGL] = (u_xi_minus1_boundary_right - u_xi_minus1_boundary_left)
-
-    u_xi_1_boundary_left  = u[:, :, -params.N_LGL:]
-    u_xi_1_boundary_right = af.shift(u[:, :, :params.N_LGL], d0=0, d1=-1)
-    u[:, :, :params.N_LGL]     = (u_xi_minus1_boundary_left + u_xi_minus1_boundary_right) / 2
-
-    diff_u_boundary[:, :, -params.N_LGL:] = (u_xi_minus1_boundary_right - u_xi_minus1_boundary_left)
+        u_xi_1_boundary_left    = u[:, :, -params.N_LGL:]
+        u[:, :, -params.N_LGL:] = u_xi_1_boundary_left
 
 
-    u_eta_minus1_boundary_down = af.shift(u[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL], d0=-1)
-    u_eta_minus1_boundary_up   = u[:, :, 0:-params.N_LGL + 1:params.N_LGL]
-    u[:, :, 0:-params.N_LGL + 1:params.N_LGL] = (u_eta_minus1_boundary_down\
-                                               + u_eta_minus1_boundary_up) / 2
-    diff_u_boundary[:, :, 0:-params.N_LGL + 1:params.N_LGL] = (u_eta_minus1_boundary_up\
-                                                               -u_eta_minus1_boundary_down)
+    if (params.c_x < 0):
+        u_xi_minus1_boundary_right   = u[:, :, :params.N_LGL]
+        u[:, :, :params.N_LGL]    = u_xi_minus1_boundary_right
 
-    u_eta_1_boundary_down = u[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL]
-    u_eta_1_boundary_up   = af.shift(u[:, :, 0:-params.N_LGL + 1:params.N_LGL], d0=1)
+        u_xi_1_boundary_right = af.shift(u[:, :, :params.N_LGL], d0=0, d1=-1)
+        u[:, :, -params.N_LGL:] = u_xi_1_boundary_right
 
-    u[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL] = (u_eta_1_boundary_up\
-                                                              +u_eta_1_boundary_down) / 2
 
-    diff_u_boundary[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL] = (u_eta_1_boundary_up\
-                                                                             -u_eta_1_boundary_down)
+    if (params.c_y > 0):
+
+        u_eta_minus1_boundary_down  = af.shift(u[:, :,
+                                      params.N_LGL - 1:params.N_LGL ** 2
+                                      :params.N_LGL]\
+                                      , d0=-1)
+        u[:, :, 0:-params.N_LGL + 1:params.N_LGL] = u_eta_minus1_boundary_down
+
+        u_eta_1_boundary_down = u[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL]
+
+        u[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL] = (u_eta_1_boundary_down)
+
+    if (params.c_y < 0):
+
+        u_eta_minus1_boundary_up   = u[:, :, 0:-params.N_LGL + 1:params.N_LGL]
+        u[:, :, 0:-params.N_LGL + 1:params.N_LGL] = u_eta_minus1_boundary_up
+        
+        u_eta_1_boundary_up   = af.shift(u[:, :, 0:-params.N_LGL + 1:params.N_LGL], d0=1)
+        u[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL] = u_eta_1_boundary_up
+
+
 
     u = af.moddims(af.reorder(u, 2, 1, 0), params.N_LGL ** 2, 100)
-    diff_u_boundary = af.moddims(af.reorder(diff_u_boundary, 2, 1, 0), params.N_LGL ** 2, 100)
-    F_xi_e_ij  = params.c_x * u - params.c_x * diff_u_boundary
-    F_eta_e_ij = params.c_y * u - params.c_y * diff_u_boundary
+    F_xi_e_ij  = params.c_x * u
+    F_eta_e_ij = params.c_y * u
 
     return F_xi_e_ij, F_eta_e_ij
+
+#def lax_friedrichs_flux(u, gv):
+#    '''
+#    '''
+#    u = af.reorder(af.moddims(u, params.N_LGL ** 2, 10, 10), 2, 1, 0)
+#
+#    diff_u_boundary = af.np_to_af_array(np.zeros([10, 10, params.N_LGL ** 2]))
+#
+#    u_xi_minus1_boundary_right   = u[:, :, :params.N_LGL]
+#    u_xi_minus1_boundary_left    = af.shift(u[:, :, -params.N_LGL:], d0=0, d1 = 1)
+#    u[:, :, :params.N_LGL]       = (u_xi_minus1_boundary_right + u_xi_minus1_boundary_left) / 2
+#
+#    diff_u_boundary[:, :, :params.N_LGL] = (u_xi_minus1_boundary_right - u_xi_minus1_boundary_left)
+#
+#    u_xi_1_boundary_left  = u[:, :, -params.N_LGL:]
+#    u_xi_1_boundary_right = af.shift(u[:, :, :params.N_LGL], d0=0, d1=-1)
+#    u[:, :, -params.N_LGL:]     = (u_xi_1_boundary_left + u_xi_1_boundary_right) / 2
+#
+#    diff_u_boundary[:, :, -params.N_LGL:] = (u_xi_minus1_boundary_right - u_xi_minus1_boundary_left)
+#
+#
+#    u_eta_minus1_boundary_down = af.shift(u[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL], d0=-1)
+#    u_eta_minus1_boundary_up   = u[:, :, 0:-params.N_LGL + 1:params.N_LGL]
+#    u[:, :, 0:-params.N_LGL + 1:params.N_LGL] = (u_eta_minus1_boundary_down\
+#                                               + u_eta_minus1_boundary_up) / 2
+#    diff_u_boundary[:, :, 0:-params.N_LGL + 1:params.N_LGL] = (u_eta_minus1_boundary_up\
+#                                                               -u_eta_minus1_boundary_down)
+#
+#    u_eta_1_boundary_down = u[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL]
+#    u_eta_1_boundary_up   = af.shift(u[:, :, 0:-params.N_LGL + 1:params.N_LGL], d0=1)
+#
+#    u[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL] = (u_eta_1_boundary_up\
+#                                                              + u_eta_1_boundary_down) / 2
+#
+#    diff_u_boundary[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL] = (u_eta_1_boundary_up\
+#                                                                             -u_eta_1_boundary_down)
+#
+#    u = af.moddims(af.reorder(u, 2, 1, 0), params.N_LGL ** 2, 100)
+#    diff_u_boundary = af.moddims(af.reorder(diff_u_boundary, 2, 1, 0), params.N_LGL ** 2, 100)
+#    F_xi_e_ij  = params.c_x * u - gv.c_lax_2d * diff_u_boundary
+#    F_eta_e_ij = params.c_y * u - gv.c_lax_2d * diff_u_boundary
+#
+#    return F_xi_e_ij, F_eta_e_ij
 
 
 def surface_term_vectorized(u, advec_var):
@@ -126,8 +180,8 @@ def surface_term_vectorized(u, advec_var):
     dx_dxi = 0.1
     dy_deta = 0.1
 
-    f_xi_surface_term  = lax_friedrichs_flux(u)[0]
-    f_eta_surface_term = lax_friedrichs_flux(u)[1]
+    f_xi_surface_term  = upwind_flux(u, advec_var)[0]
+    f_eta_surface_term = upwind_flux(u, advec_var)[1]
 
     Lp_xi   = af.moddims(af.reorder(af.tile(utils.polyval_1d(lagrange_coeffs,
                             advec_var.xi_LGL), 1, 1, params.N_LGL), 1, 2, 0), params.N_LGL, 1, params.N_LGL ** 2)
@@ -266,7 +320,7 @@ def time_evolution(gv):
     A_inverse = af.np_to_af_array(np.linalg.inv(np.array(A_matrix(gv))))
 
     for i in trange(time.shape[0]):
-        L1_norm = af.mean(af.abs(u_init - u))
+        L1_norm = af.max(af.abs(u_init - u))
 
         if (L1_norm >= 100):
             break
@@ -286,6 +340,7 @@ def time_evolution(gv):
 
         #u            +=  af.matmul(A_inverse, b_vector(u_n_plus_half))\
         #                  * delta_t
+    L1_norm = af.mean(af.abs(u - u_analytical(i + 1, gv)))
 
     return L1_norm
 

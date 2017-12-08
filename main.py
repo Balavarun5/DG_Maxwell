@@ -11,7 +11,6 @@ from tqdm import trange
 from dg_maxwell import wave_equation
 from dg_maxwell import msh_parser
 from dg_maxwell import wave_equation_2d
-from dg_maxwell.tests import test_waveEqn
 from dg_maxwell import isoparam
 from dg_maxwell import lagrange
 from dg_maxwell import params
@@ -36,10 +35,10 @@ print(af.info())
 #print(wave_equation_2d.dx_deta(gv.nodes[gv.elements[0]][:, 1], gv.xi_i, gv.eta_j))
 #print(gv.nodes[gv.elements[1]][:, 1])
 #print(af.np_to_af_array(gv.nodes[gv.elements[1]]))#[:, 0])
-elements_nodes = (af.reorder(af.transpose(af.np_to_af_array(gv.nodes[gv.elements[:]])), 0, 2, 1))#[0, :, :])
 #print(elements_nodes)
-
-
+#print(advection_2d.time_evolution(gv))
+print(gv.sqrt_g.shape)
+wave_equation_2d.time_evolution(gv)
 
 #dxi_dx_elements = (wave_equation_2d.trial_dxi_dx(elements_nodes[:, 0, :],\
 #                   elements_nodes[:, 1, :], gv.xi_i, gv.eta_j))

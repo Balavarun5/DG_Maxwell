@@ -277,6 +277,7 @@ def trial_dx_dxi(x_nodes, xi, eta):
            + af.broadcast(utils.multiply, dN_5_dxi, x_nodes[5]) \
            + af.broadcast(utils.multiply, dN_6_dxi, x_nodes[6]) \
            + af.broadcast(utils.multiply, dN_7_dxi, x_nodes[7])
+    dx_dxi = af.reorder(dx_dxi, 0, 2, 1)
 
     return dx_dxi
 
@@ -305,6 +306,7 @@ def trial_dx_deta(x_nodes, xi, eta):
             + af.broadcast(utils.multiply, dN_5_deta, x_nodes[5, :, :]) \
             + af.broadcast(utils.multiply, dN_6_deta, x_nodes[6, :, :]) \
             + af.broadcast(utils.multiply, dN_7_deta, x_nodes[7, :, :])
+    dx_deta = af.reorder(dx_deta, 0, 2, 1)
 
     return dx_deta
 
@@ -427,9 +429,9 @@ def A_matrix(N_LGL, advec_var):
                                                                 d2 = 0))
 
     A = utils.integrate_2d_multivar_poly(Lp_Li_Lq_Lj_tp, params.N_quad,
-                                         'gauss', advec_var)
+                                         'gauss', advec_var, sqrt_g = 1)
 
-    A = af.moddims(A, d0 = N_LGL * N_LGL, d1 = N_LGL * N_LGL)
+    A = af.moddims(A, d0 = N_LGL * N_LGL, d1 = N_LGL * N_LGL, d2 = 100)
 
     return A
 
@@ -437,6 +439,7 @@ def A_matrix_xi_eta(N_LGL, advec_var):
     '''
     '''
     A_xi_eta = A_matrix(N_LGL, advec_var) * np.mean(advec_var.sqrt_det_g)
+
     return A_xi_eta
 
 
@@ -599,11 +602,10 @@ def Li_Lj_coeffs(N_LGL):
     xi_LGL = lagrange.LGL_points(N_LGL)
     lagrange_coeffs = af.np_to_af_array(lagrange.lagrange_polynomials(xi_LGL)[1])
 
-    Li_xi  = af.moddims(af.tile(af.reorder(lagrange_coeffs, 1, 2, 0),
-                                1, N_LGL),
-                        N_LGL, 1, N_LGL ** 2)
+    Li_xi        = af.moddims(af.tile(af.reorder(lagrange_coeffs, 1, 2, 0),
+                              1, N_LGL), N_LGL, 1, N_LGL ** 2)
     
-    Lj_eta = af.tile(af.reorder(lagrange_coeffs, 1, 2, 0), 1, 1, N_LGL)
+    Lj_eta       = af.tile(af.reorder(lagrange_coeffs, 1, 2, 0), 1, 1, N_LGL)
 
     Li_Lj_coeffs = utils.polynomial_product_coeffs(Li_xi, Lj_eta)
 
@@ -880,7 +882,8 @@ def time_evolution(gv):
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
-    A_inverse = af.np_to_af_array(np.linalg.inv(np.array(A_matrix_xi_eta(params.N_LGL, gv))))
+    A_inverse = af.np_to_af_array(np.linalg.inv(np.array(A_matrix(params.N_LGL,
+                                             gv)[:, :, 0])))
     xi_LGL = lagrange.LGL_points(params.N_LGL)
     xi_i   = af.flat(af.transpose(af.tile(xi_LGL, 1, params.N_LGL)))
     eta_j  = af.tile(xi_LGL, params.N_LGL)
@@ -890,6 +893,7 @@ def time_evolution(gv):
     time      = gv.time
     u         = u_init_2d
     time      = gv.time_2d
+    print(time.shape)
     
     for i in trange(0, time.shape[0]):
         L1_norm = af.mean(af.abs(u_init_2d - u))
@@ -904,5 +908,15 @@ def time_evolution(gv):
             dset[:, :] = u[:, :]
 
         u += RK4_timestepping(A_inverse, u, delta_t, gv)
+    L1_norm = af.mean(af.abs(u - u_analytical(u, i, gv)))
 
     return L1_norm
+
+def u_analytical(u, i, gv):
+    '''
+    '''
+    t = params.delta_t_2d * i
+    u_analytical = af.sin((gv.x_e_ij - params.c_x * t) * 2 * np.pi + (gv.y_e_ij
+                         - params.c_y * t)* 4 * np.pi)
+    return analytical_u
+
