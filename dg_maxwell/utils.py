@@ -574,7 +574,8 @@ def gauss_quad_multivar_poly(poly_xi_eta, N_quad, advec_var, sqrt_g):
     #P_xi_eta_quad_val = af.transpose(polyval_2d(poly_xi_eta, Xi, Eta))
     integral = af.sum(W_i * W_j * P_xi_eta_quad_val, dim = 0)
     if (sqrt_g == 1):
-        wi_wj_sqrt_g = af.broadcast(multiply, W_i * W_j, advec_var.sqrt_g)
+        sqrt_g = af.reorder(advec_var.sqrt_g, 0, 2, 1)
+        wi_wj_sqrt_g = af.broadcast(multiply, W_i * W_j, sqrt_g)
         integral_val = af.broadcast(multiply, P_xi_eta_quad_val,
                                     wi_wj_sqrt_g)
         integral = af.sum(integral_val, 0)

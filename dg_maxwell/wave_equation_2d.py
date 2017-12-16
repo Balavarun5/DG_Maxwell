@@ -6,7 +6,6 @@ import arrayfire as af
 import os
 import h5py
 
-
 from dg_maxwell import params
 from dg_maxwell import isoparam
 from dg_maxwell import msh_parser
@@ -222,35 +221,35 @@ def jacobian(x_nodes, y_nodes, xi, eta):
     dy_deta_ = dy_deta (y_nodes, xi, eta)
     dx_deta_ = dx_deta (x_nodes, xi, eta)
     dy_dxi_  = dy_dxi (y_nodes, xi, eta)
-    
+
     return (dx_dxi_ * dy_deta_) - (dx_deta_ * dy_dxi_)
 
 def dxi_dx(x_nodes, y_nodes, xi, eta):
     '''
     '''
     dy_deta_ = dy_deta(y_nodes, xi, eta)
-    
+
     return dy_deta_ / jacobian(x_nodes, y_nodes, xi, eta)
 
 def dxi_dy(x_nodes, y_nodes, xi, eta):
     '''
     '''
     dx_deta_ = dx_deta(x_nodes, xi, eta)
-    
+
     return -dx_deta_ / jacobian(x_nodes, y_nodes, xi, eta)
 
 def deta_dx(x_nodes, y_nodes, xi, eta):
     '''
     '''
     dy_dxi_ = dy_dxi(y_nodes, xi, eta)
-    
+
     return -dy_dxi_ / jacobian(x_nodes, y_nodes, xi, eta)
 
 def deta_dy (x_nodes, y_nodes, xi, eta):
     '''
     '''
     dx_dxi_ = dx_dxi(x_nodes, xi, eta)
-    
+
     return dx_dxi_ / jacobian(x_nodes, y_nodes, xi, eta)
 
 # Functions which perform the same function as the above ones
@@ -332,35 +331,35 @@ def trial_jacobian(x_nodes, y_nodes, xi, eta):
     dy_deta_ = trial_dy_deta (y_nodes, xi, eta)
     dx_deta_ = trial_dx_deta (x_nodes, xi, eta)
     dy_dxi_  = trial_dy_dxi (y_nodes, xi, eta)
-    
+
     return (dx_dxi_ * dy_deta_) - (dx_deta_ * dy_dxi_)
 
 def trial_dxi_dx(x_nodes, y_nodes, xi, eta):
     '''
     '''
     dy_deta_ = trial_dy_deta(y_nodes, xi, eta)
-    
+
     return dy_deta_ / trial_jacobian(x_nodes, y_nodes, xi, eta)
 
 def trial_dxi_dy(x_nodes, y_nodes, xi, eta):
     '''
     '''
     dx_deta_ = trial_dx_deta(x_nodes, xi, eta)
-    
+
     return -dx_deta_ / trial_jacobian(x_nodes, y_nodes, xi, eta)
 
 def trial_deta_dx(x_nodes, y_nodes, xi, eta):
     '''
     '''
     dy_dxi_ = trial_dy_dxi(y_nodes, xi, eta)
-    
+
     return -dy_dxi_ / trial_jacobian(x_nodes, y_nodes, xi, eta)
 
 def trial_deta_dy (x_nodes, y_nodes, xi, eta):
     '''
     '''
     dx_dxi_ = trial_dx_dxi(x_nodes, xi, eta)
-    
+
     return dx_dxi_ / trial_jacobian(x_nodes, y_nodes, xi, eta)
 
 ##############
@@ -464,23 +463,23 @@ def g_dd(x_nodes, y_nodes, xi, eta):
              + (dy_dxi(y_nodes, xi, eta))**2
     ans11  =   (dx_deta(x_nodes, xi, eta))**2 \
              + (dy_deta(y_nodes, xi, eta))**2
-    
+
     ans01  =  (dx_dxi(x_nodes, xi, eta))  \
             * (dx_deta(x_nodes, xi, eta)) \
             + (dy_dxi(y_nodes, xi, eta))  \
             * (dy_deta(y_nodes, xi, eta))
-    
+
     ans =  [[ans00, ans01],
             [ans01, ans11]
            ]
-    
+
     return np.array(ans)
 
 
 def g_uu(x_nodes, y_nodes, xi, eta):
     gCov = g_dd(x_nodes, y_nodes, xi, eta)
-    
-    
+
+
     a = gCov[0][0]
     b = gCov[0][1]
     c = gCov[1][0]
@@ -498,12 +497,12 @@ def sqrt_det_g(x_nodes, y_nodes, xi, eta):
     '''
     '''
     gCov = g_dd(x_nodes, y_nodes, xi, eta)
-    
+
     a = gCov[0][0]
     b = gCov[0][1]
     c = gCov[1][0]
     d = gCov[1][1]
-    
+
     return (a*d - b*c)**0.5
 
 # Trial functions which compute the metric tensor for multiple elements.
@@ -515,7 +514,7 @@ def trial_g_dd(x_nodes, y_nodes, xi, eta):
              + (trial_dy_dxi(y_nodes, xi, eta))**2
     ans11  =   (trial_dx_deta(x_nodes, xi, eta))**2 \
              + (trial_dy_deta(y_nodes, xi, eta))**2
-    
+
     ans01  =  (trial_dx_dxi(x_nodes, xi, eta))  \
             * (trial_dx_deta(x_nodes, xi, eta)) \
             + (trial_dy_dxi(y_nodes, xi, eta))  \
@@ -550,15 +549,13 @@ def trial_sqrt_det_g(x_nodes, y_nodes, xi, eta):
     '''
     '''
     gCov = trial_g_dd(x_nodes, y_nodes, xi, eta)
-    
+
     a = gCov[0][0]
     b = gCov[0][1]
     c = gCov[1][0]
     d = gCov[1][1]
 
     return (a*d - b*c)**0.5
-    
-############## 
 
 def F_xi(u, gv):
     '''
@@ -570,8 +567,8 @@ def F_xi(u, gv):
     xi_i   = gv.xi_i
     eta_j  = gv.eta_j
 
-    dxi_by_dx = af.reorder(trial_dxi_dx(gv.elements_nodes[:, 0, :], gv.elements_nodes[:, 1, :], xi_i, eta_j), 0, 2, 1)
-    dxi_by_dy = af.reorder(trial_dxi_dy(gv.elements_nodes[:, 0, :], gv.elements_nodes[:, 1, :], xi_i, eta_j), 0, 2, 1)
+    dxi_by_dx = gv.dxi_by_dx
+    dxi_by_dy = gv.dxi_by_dy
     F_xi_u = F_x(u) * dxi_by_dx + F_y(u) * dxi_by_dy
 
     return F_xi_u
@@ -588,8 +585,8 @@ def F_eta(u, gv):
     eta_j  = gv.eta_j
 
 
-    deta_by_dx = af.reorder(trial_deta_dx(gv.elements_nodes[:, 0, :], gv.elements_nodes[:, 1, :], xi_i, eta_j), 0, 2, 1)
-    deta_by_dy = af.reorder(trial_deta_dy(gv.elements_nodes[:, 0, :], gv.elements_nodes[:, 1, :], xi_i, eta_j), 0, 2, 1)
+    deta_by_dx = gv.deta_by_dx
+    deta_by_dy = gv.deta_by_dy
 
     F_eta_u = F_x(u) * deta_by_dx + F_y(u) * deta_by_dy
 
@@ -604,7 +601,7 @@ def Li_Lj_coeffs(N_LGL):
 
     Li_xi        = af.moddims(af.tile(af.reorder(lagrange_coeffs, 1, 2, 0),
                               1, N_LGL), N_LGL, 1, N_LGL ** 2)
-    
+
     Lj_eta       = af.tile(af.reorder(lagrange_coeffs, 1, 2, 0), 1, 1, N_LGL)
 
     Li_Lj_coeffs = utils.polynomial_product_coeffs(Li_xi, Lj_eta)
@@ -615,14 +612,14 @@ def Li_Lj_coeffs(N_LGL):
 def lag_interpolation_2d(u_e_ij, Li_Lj_coeffs):
     '''
     Does the lagrange interpolation of a function.
-    
+
     Parameters
     ----------
-    
+
     u_e_ij : af.Array [N_LGL^2 N_elements 1 1]
              Value of the function calculated at the :math:`(\\xi_i, \\eta_j)`
              points in this form
-             
+
              .. math:: \\xi_i = [\\xi_0, \\xi_0, ..., \\xi_0, \\xi_1, \\
                        ... ..., \\xi_N]
              .. math:: \\eta_j = [\\eta_0, \\eta_1, ..., \\eta_N, \\
@@ -689,46 +686,54 @@ def volume_integral(u, gv):
 
     return volume_integral
 
-def lax_friedrichs_flux(u, gv):
+
+
+def upwind_flux(u, gv):
     '''
     '''
     u = af.reorder(af.moddims(u, params.N_LGL ** 2, 10, 10), 2, 1, 0)
 
-    diff_u_boundary = af.np_to_af_array(np.zeros([10, 10, params.N_LGL ** 2]))
+    if (params.c_x > 0):
+        u_xi_minus1_boundary_left = af.shift(u[:, :, -params.N_LGL:], d0=0, d1 = 1)
+        u[:, :, :params.N_LGL]    = u_xi_minus1_boundary_left
 
-    u_xi_minus1_boundary_right   = u[:, :, :params.N_LGL]
-    u_xi_minus1_boundary_left    = af.shift(u[:, :, -params.N_LGL:], d0=0, d1 = 1)
-    u[:, :, :params.N_LGL]       = (u_xi_minus1_boundary_right + u_xi_minus1_boundary_left) / 2
-
-    diff_u_boundary[:, :, :params.N_LGL] = (u_xi_minus1_boundary_right - u_xi_minus1_boundary_left)
-
-    u_xi_1_boundary_left  = u[:, :, -params.N_LGL:]
-    u_xi_1_boundary_right = af.shift(u[:, :, :params.N_LGL], d0=0, d1=-1)
-    u[:, :, :params.N_LGL]     = (u_xi_minus1_boundary_left + u_xi_minus1_boundary_right) / 2
-
-    diff_u_boundary[:, :, -params.N_LGL:] = (u_xi_minus1_boundary_right - u_xi_minus1_boundary_left)
+        u_xi_1_boundary_left    = u[:, :, -params.N_LGL:]
+        u[:, :, -params.N_LGL:] = u_xi_1_boundary_left
 
 
-    u_eta_minus1_boundary_down = af.shift(u[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL], d0=-1)
-    u_eta_minus1_boundary_up   = u[:, :, 0:-params.N_LGL + 1:params.N_LGL]
-    u[:, :, 0:-params.N_LGL + 1:params.N_LGL] = (u_eta_minus1_boundary_down\
-                                               + u_eta_minus1_boundary_up) / 2
-    diff_u_boundary[:, :, 0:-params.N_LGL + 1:params.N_LGL] = (u_eta_minus1_boundary_up\
-                                                               -u_eta_minus1_boundary_down)
+    if (params.c_x < 0):
+        u_xi_minus1_boundary_right   = u[:, :, :params.N_LGL]
+        u[:, :, :params.N_LGL]    = u_xi_minus1_boundary_right
 
-    u_eta_1_boundary_down = u[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL]
-    u_eta_1_boundary_up   = af.shift(u[:, :, 0:-params.N_LGL + 1:params.N_LGL], d0=1)
+        u_xi_1_boundary_right = af.shift(u[:, :, :params.N_LGL], d0=0, d1=-1)
+        u[:, :, -params.N_LGL:] = u_xi_1_boundary_right
 
-    u[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL] = (u_eta_1_boundary_up\
-                                                              +u_eta_1_boundary_down) / 2
 
-    diff_u_boundary[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL] = (u_eta_1_boundary_up\
-                                                                             -u_eta_1_boundary_down)
+    if (params.c_y > 0):
+
+        u_eta_minus1_boundary_down  = af.shift(u[:, :,
+                                      params.N_LGL - 1:params.N_LGL ** 2
+                                      :params.N_LGL]\
+                                      , d0=-1)
+        u[:, :, 0:-params.N_LGL + 1:params.N_LGL] = u_eta_minus1_boundary_down
+
+        u_eta_1_boundary_down = u[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL]
+
+        u[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL] = (u_eta_1_boundary_down)
+
+    if (params.c_y < 0):
+
+        u_eta_minus1_boundary_up   = u[:, :, 0:-params.N_LGL + 1:params.N_LGL]
+        u[:, :, 0:-params.N_LGL + 1:params.N_LGL] = u_eta_minus1_boundary_up
+
+        u_eta_1_boundary_up   = af.shift(u[:, :, 0:-params.N_LGL + 1:params.N_LGL], d0=1)
+        u[:, :, params.N_LGL - 1:params.N_LGL ** 2:params.N_LGL] = u_eta_1_boundary_up
+
+
 
     u = af.moddims(af.reorder(u, 2, 1, 0), params.N_LGL ** 2, 100)
-    diff_u_boundary = af.moddims(af.reorder(diff_u_boundary, 2, 1, 0), params.N_LGL ** 2, 100)
-    F_xi_e_ij  = F_xi(u, gv)  - params.c_x * diff_u_boundary
-    F_eta_e_ij = F_eta(u, gv) - params.c_y * diff_u_boundary
+    F_xi_e_ij  = F_xi(u, gv)
+    F_eta_e_ij = F_eta(u, gv)
 
     return F_xi_e_ij, F_eta_e_ij
 
@@ -741,9 +746,11 @@ def surface_term_vectorized(u, advec_var):
 
     eta_LGL = advec_var.xi_LGL
 
+    sqrt_g = af.reorder(advec_var.sqrt_g, 0, 2, 1)
 
-    f_xi_surface_term  = lax_friedrichs_flux(u, advec_var)[0]
-    f_eta_surface_term = lax_friedrichs_flux(u, advec_var)[1]
+
+    f_xi_surface_term  = upwind_flux(u, advec_var)[0]
+    f_eta_surface_term = upwind_flux(u, advec_var)[1]
 
     Lp_xi   = af.moddims(af.reorder(af.tile(utils.polyval_1d(lagrange_coeffs,
                             advec_var.xi_LGL), 1, 1, params.N_LGL), 1, 2, 0), params.N_LGL, 1, params.N_LGL ** 2)
@@ -773,7 +780,7 @@ def surface_term_vectorized(u, advec_var):
     lag_interpolation_1 = af.transpose(af.moddims(af.transpose(lag_interpolation_1),\
                                        params.N_LGL, params.N_LGL ** 2 * 100))
 
-    surface_term_pq_xi_1 = lagrange.integrate(lag_interpolation_1, advec_var) * np.mean(advec_var.sqrt_det_g)
+    surface_term_pq_xi_1 = lagrange.integrate(lag_interpolation_1, advec_var)
     surface_term_pq_xi_1 = af.moddims(surface_term_pq_xi_1, params.N_LGL ** 2, 100)
 
     # xi = -1 boundary
@@ -833,12 +840,14 @@ def surface_term_vectorized(u, advec_var):
 
 
 
+
 def b_vector(u, advec_var):
     '''
     '''
     surface_term_u_pq    = surface_term_vectorized(u, advec_var)
     volume_integral_pq   = volume_integral(u, advec_var)
     b_vector_array       = volume_integral_pq - surface_term_u_pq
+    b_vector_array     = af.moddims(b_vector_array, params.N_LGL ** 2, 1, 100)
 
     return b_vector_array
 
@@ -865,10 +874,14 @@ def RK4_timestepping(A_inverse, u, delta_t, gv):
               The change in u at the mapped LGL points.
     '''
 
-    k1 = af.matmul(A_inverse, b_vector(u, gv))
-    k2 = af.matmul(A_inverse, b_vector(u + k1 * delta_t / 2, gv))
-    k3 = af.matmul(A_inverse, b_vector(u + k2 * delta_t / 2, gv))
-    k4 = af.matmul(A_inverse, b_vector(u + k3 * delta_t    , gv))
+    k1 = utils.matmul_3D(A_inverse, b_vector(u, gv))
+    k1 = af.reorder(k1, 0, 2, 1)
+    k2 = utils.matmul_3D(A_inverse, b_vector(u + k1 * delta_t / 2, gv))
+    k2 = af.reorder(k2, 0, 2, 1)
+    k3 = utils.matmul_3D(A_inverse, b_vector(u + k2 * delta_t / 2, gv))
+    k3 = af.reorder(k3, 0, 2, 1)
+    k4 = utils.matmul_3D(A_inverse, b_vector(u + k3 * delta_t    , gv))
+    k4 = af.reorder(k4, 0, 2, 1)
 
     delta_u = delta_t * (k1 + 2 * k2 + 2 * k3 + k4) / 6
 
@@ -882,8 +895,11 @@ def time_evolution(gv):
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
-    A_inverse = af.np_to_af_array(np.linalg.inv(np.array(A_matrix(params.N_LGL,
-                                             gv)[:, :, 0])))
+    A_inverse = af.np_to_af_array(np.zeros([params.N_LGL ** 2, params.N_LGL **
+                                            2, 100]))
+    for i in trange(100):
+        A_inverse[:, :, i] = af.np_to_af_array(np.linalg.inv
+                             (np.array(A_matrix(params.N_LGL, gv)[:, :, i])))
     xi_LGL = lagrange.LGL_points(params.N_LGL)
     xi_i   = af.flat(af.transpose(af.tile(xi_LGL, 1, params.N_LGL)))
     eta_j  = af.tile(xi_LGL, params.N_LGL)
@@ -894,7 +910,7 @@ def time_evolution(gv):
     u         = u_init_2d
     time      = gv.time_2d
     print(time.shape)
-    
+
     for i in trange(0, time.shape[0]):
         L1_norm = af.mean(af.abs(u_init_2d - u))
 
@@ -915,8 +931,7 @@ def time_evolution(gv):
 def u_analytical(u, i, gv):
     '''
     '''
-    t = params.delta_t_2d * i
-    u_analytical = af.sin((gv.x_e_ij - params.c_x * t) * 2 * np.pi + (gv.y_e_ij
+    t = gv.delta_t_2d * i
+    analytical_u = af.sin((gv.x_e_ij - params.c_x * t) * 2 * np.pi + (gv.y_e_ij
                          - params.c_y * t)* 4 * np.pi)
     return analytical_u
-

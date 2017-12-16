@@ -13,14 +13,14 @@ from dg_maxwell import params
 from dg_maxwell import global_variables
 
 pl.rcParams['figure.figsize'  ] = 9.6, 6.
-pl.rcParams['figure.dpi'      ] = 50
+pl.rcParams['figure.dpi'      ] = 300
 pl.rcParams['image.cmap'      ] = 'jet'
 pl.rcParams['lines.linewidth' ] = 1.5
 pl.rcParams['font.family'     ] = 'serif'
 pl.rcParams['font.weight'     ] = 'bold'
 pl.rcParams['font.size'       ] = 20
 pl.rcParams['font.sans-serif' ] = 'serif'
-pl.rcParams['text.usetex'     ] = False
+pl.rcParams['text.usetex'     ] = True
 pl.rcParams['axes.linewidth'  ] = 1.5
 pl.rcParams['axes.titlesize'  ] = 'medium'
 pl.rcParams['axes.labelsize'  ] = 'medium'
@@ -97,7 +97,7 @@ def contour_2d(u, index):
            
 
 for i in trange(1000):
-    h5py_data = h5py.File('results/2d_hdf5_%02d/dump_timestep_%06d' %(int(params.N_LGL), int(10 * i)) + '.hdf5', 'r')
+    h5py_data = h5py.File('results/xi_eta_2d_hdf5_%02d/dump_timestep_%06d' %(int(params.N_LGL), int(10 * i)) + '.hdf5', 'r')
     u_LGL     = af.np_to_af_array(h5py_data['u_i'][:])
     contour_2d(u_LGL, i)
 

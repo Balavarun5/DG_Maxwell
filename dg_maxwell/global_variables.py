@@ -20,14 +20,13 @@ class advection_variables:
     Stores and initializes such variables which are called repeatedly
     in different functions.
     '''
-    
     def __init__(self, N_LGL, N_quad, x_nodes,
                  N_elements, c, total_time, wave,
                  c_x, c_y, courant, mesh_file,
                  total_time_2d):
         '''
         Initializes the variables using the user parameters.
-        
+
         Parameters
         ----------
         N_LGL : int
@@ -38,35 +37,34 @@ class advection_variables:
                  Gauss-Legendre quadrature.
         x_nodes : af.Array [2 1 1 1]
                   :math:`x` nodes for the :math:`1D` wave equation elements.
-                  
+
         N_elements : int
                      Number of elements in a :math:`1D` domain.
-                     
+
         c : float64
             Wave speed for 1D wave equation.
-            
+
         total_time : float64
                      Total time for which :math:`1D` wave equation is to be
                      evolved.
-                     
+
         wave : str
                Used to set u_init to ``sin`` or ``cos``.
-               
+
         c_x : float64
               :math:`x` component of wave speed for a :math:`2D` wave.
-              
+
         c_y : float64
               :math:`y` component of wave speed for a :math:`2D` wave.
-              
+
         courant : float64
                   Courant parameter used for the time evolution of the wave.
-                  
+
         mesh_file : str
                     Path of the mesh file for the 2D wave equation.
-                    
+
         total_time_2d : float64
                         Total time for which the wave is to propogated.
-        
         Returns
         -------
         None
@@ -105,7 +103,7 @@ class advection_variables:
         self.np_element_array = np.concatenate((
             af.transpose(self.elements),
             af.transpose(self.elements + self.element_size)))
-        
+
         self.element_mesh_nodes = utils.linspace(af.sum(x_nodes[0]),
                                                  af.sum(x_nodes[1]),
                                                  N_elements + 1)
@@ -172,7 +170,7 @@ class advection_variables:
 
         self.dLp_Lq = self.Lq_eta_ij * self.dLp_xi_ij
         self.dLq_Lp = self.Lp_xi_ij  * self.dLq_eta_ij
-        
+
         self.Li_Lj_coeffs = wave_equation_2d.Li_Lj_coeffs(N_LGL)
 
         self.delta_y = self.delta_x
@@ -189,6 +187,56 @@ class advection_variables:
                                                   len(self.elements)]))
         self.y_e_ij = af.np_to_af_array(np.zeros([N_LGL * N_LGL,
                                                   len(self.elements)]))
+
+        #for element_tag, element in enumerate(self.elements):
+        #    self.x_e_ij[:, element_tag] = isoparam.isoparam_x_2D(
+        #        self.nodes[element, 0], self.xi_i, self.eta_j)
+        #    self.y_e_ij[:, element_tag] = isoparam.isoparam_y_2D(
+        #        self.nodes[element, 1], self.xi_i, self.eta_j)
+
+        ##self.u_e_ij = af.sin(self.x_e_ij * 2 * np.pi + self.y_e_ij * 4 * np.pi)
+        #self.u_e_ij = np.e ** (- (self.x_e_ij ** 2 + self.y_e_ij ** 2)/(0.4 **2))
+
+        ## Array of timesteps seperated by delta_t.
+        #self.time_2d = utils.linspace(0, int(total_time_2d / self.delta_t_2d)
+        #                              * self.delta_t_2d,
+        #                              int(total_time_2d / self.delta_t_2d))
+        ##self.sqrt_det_g = wave_equation_2d.sqrt_det_g(self.nodes[self.elements[0]][:, 0], \
+        ##                self.nodes[self.elements[0]][:, 1], np.array(self.xi_i), np.array(self.eta_j))
+
+        #self.elements_nodes = (af.reorder(af.transpose(af.np_to_af_array(self.nodes[self.elements[:]])), 0, 2, 1))
+
+        #self.sqrt_g = wave_equation_2d.trial_sqrt_det_g(self.elements_nodes[:, 0, :],\
+        #              self.elements_nodes[:, 1, :], self.xi_i, self.eta_j)
+
+
+
+        #self.dxi_by_dx = (wave_equation_2d.trial_dxi_dx(self.elements_nodes[:, 0, :],
+        #                  self.elements_nodes[:, 1, :], self.xi_i, self.eta_j))
+
+        #self.dxi_by_dy = (wave_equation_2d.trial_dxi_dy(self.elements_nodes[:, 0, :],
+        #                  self.elements_nodes[:, 1, :], self.xi_i, self.eta_j))
+
+
+        #self.deta_by_dx = (wave_equation_2d.trial_deta_dx(self.elements_nodes[:, 0, :],
+        #                   self.elements_nodes[:, 1, :], self.xi_i, self.eta_j))
+
+        #self.deta_by_dy = (wave_equation_2d.trial_deta_dy(self.elements_nodes[:, 0, :],
+        #                   self.elements_nodes[:, 1, :], self.xi_i, self.eta_j))
+
+        # parameters for evolution of distorted mesh
+
+        for node_tag, node in enumerate(self.nodes):
+            if np.all((node == [-1, 1])) or np.all(node == [-1, -1]) or np.all(node == [1, -1]) or np.all(node == [1, 1]):
+                print(node, '\t vertex')
+                continue
+            if ((node[1] != -1) and (node[1] != 1)):
+                self.nodes[node_tag, 1] += params.function(node[0])
+
+            if ((node[0] != -1) and (node[0] != 1)):
+                self.nodes[node_tag, 0] += params.function(node[1])
+
+
 
         for element_tag, element in enumerate(self.elements):
             self.x_e_ij[:, element_tag] = isoparam.isoparam_x_2D(
@@ -208,8 +256,21 @@ class advection_variables:
 
         self.elements_nodes = (af.reorder(af.transpose(af.np_to_af_array(self.nodes[self.elements[:]])), 0, 2, 1))
 
-        self.sqrt_g = af.reorder(wave_equation_2d.trial_sqrt_det_g(self.elements_nodes[:, 0, :],\
-                      self.elements_nodes[:, 1, :], self.xi_i, self.eta_j), 0,
-                      2, 1)
+        self.sqrt_g = wave_equation_2d.trial_sqrt_det_g(self.elements_nodes[:, 0, :],\
+                      self.elements_nodes[:, 1, :], self.xi_i, self.eta_j)
+
+
+        self.dxi_by_dx = (wave_equation_2d.trial_dxi_dx(self.elements_nodes[:, 0, :],
+                          self.elements_nodes[:, 1, :], self.xi_i, self.eta_j))
+
+        self.dxi_by_dy = (wave_equation_2d.trial_dxi_dy(self.elements_nodes[:, 0, :],
+                          self.elements_nodes[:, 1, :], self.xi_i, self.eta_j))
+
+
+        self.deta_by_dx = (wave_equation_2d.trial_deta_dx(self.elements_nodes[:, 0, :],
+                           self.elements_nodes[:, 1, :], self.xi_i, self.eta_j))
+
+        self.deta_by_dy = (wave_equation_2d.trial_deta_dy(self.elements_nodes[:, 0, :],
+                           self.elements_nodes[:, 1, :], self.xi_i, self.eta_j))
 
         return
